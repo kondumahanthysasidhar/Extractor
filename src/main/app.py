@@ -184,60 +184,64 @@ def url_extraction_page():
         # url = st.text_input("Enter the URL")
         file = st.file_uploader("Upload a file", type="pdf")
         if st.button("Extract"):
-            st.write(f"Links extracted from {file} (example result)")
-            file_bytes = file.read()
-            pdf_text = read_pdf(io.BytesIO(file_bytes))
-            # st.write(pdf_text)
-            links_dict = get_hyper_Links(io.BytesIO(file_bytes))
-            st.write("Found Links:")
-            st.json(links_dict)
+            with st.spinner("Extracting Links from Document"):
+                st.write(f"Links extracted from {file} (example result)")
+                file_bytes = file.read()
+                pdf_text = read_pdf(io.BytesIO(file_bytes))
+                # st.write(pdf_text)
+                links_dict = get_hyper_Links(io.BytesIO(file_bytes))
+                st.write("Found Links:")
+                st.json(links_dict)
 
-            # Optional: Allow download of scraped links
-            df = df = pd.DataFrame(
-                                    [(key, link) for key, links in links_dict.items() for link in links],  # Flatten key-value pairs
-                                    columns=["Page Number", "Links"]  # Set headers
-                                )
-            csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Download Links as CSV",
-                data=csv,
-                file_name="scraped_links.csv",
-                mime="text/csv"
-            )
+                # Optional: Allow download of scraped links
+                df = df = pd.DataFrame(
+                                        [(key, link) for key, links in links_dict.items() for link in links],  # Flatten key-value pairs
+                                        columns=["Page Number", "Links"]  # Set headers
+                                    )
+                csv = df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download Links as CSV",
+                    data=csv,
+                    file_name="scraped_links.csv",
+                    mime="text/csv"
+                )
     with tab2:
         st.header("crawl url and fetch links")
         url = st.text_input("enter url")
         if st.button("crawl"):
-            web_links = extract_links(url)
-            st.json(web_links)
-            df = df = pd.DataFrame(
-                [(key, link) for key, links in web_links.items() for link in links],  # Flatten key-value pairs
-                columns=["Page Number", "Links"]  # Set headers
-            )
-            csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Download Links as CSV",
-                data=csv,
-                file_name="scraped_links.csv",
-                mime="text/csv"
-            )
+            with st.spinner("Fetching Links"):
+                web_links = extract_links(url)
+                st.json(web_links)
+                df = df = pd.DataFrame(
+                    [(key, link) for key, links in web_links.items() for link in links],  # Flatten key-value pairs
+                    columns=["Page Number", "Links"]  # Set headers
+                )
+                csv = df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download Links as CSV",
+                    data=csv,
+                    file_name="scraped_links.csv",
+                    mime="text/csv"
+                )
 
     with tab3:
         st.header("Fetch Content")
         url_to_extract_content = st.text_input("enter url to fetch content")
         if st.button("crawl and get content"):
-            markdown_content = scrape_and_convert_to_markdown(url_to_extract_content)
-            st.markdown(markdown_content)
+            with st.spinner("Fetching Content From URL"):
+                markdown_content = scrape_and_convert_to_markdown(url_to_extract_content)
+                st.markdown(markdown_content)
     with tab4:
         st.header("Fetch Content using Deep Crawl")
         url_to_extract_content = st.text_input("enter url to fetch deep scraped content")
         crawl_depth = st.text_input("enter depth to fetch deep scraped content")
         if st.button("crawl and get deep scrape content"):
-            markdown_content = deep_scrape(url_to_extract_content,int(crawl_depth))
-            st.write("scraped")
-            for url, content in markdown_content.items():
-                with st.expander(f"Content from {url}"):
-                    st.markdown(content)
+            with st.spinner("Crawling multiple layers and fetching content"):
+                markdown_content = deep_scrape(url_to_extract_content,int(crawl_depth))
+                st.write("scraped")
+                for url, content in markdown_content.items():
+                    with st.expander(f"Content from {url}"):
+                        st.markdown(content)
 
 
     if st.button("Back to Home"):
@@ -257,15 +261,15 @@ def document_extraction_page():
             st.success(f"Uploaded {uploaded_file.name}")
             # readfile(uploaded_file)
         if st.button("Extract from system generated Document"):
-
-            import pymupdf4llm
-            bytes = uploaded_file.read()
-            pypdf = pymupdf.open(stream=io.BytesIO(bytes))
-            doc = pymupdf4llm.to_markdown(pypdf)
-            st.text_area("Extracted PDF Text", doc, height=300)
-            st.markdown(doc)
-            st.success(f"Uploaded {uploaded_file.name}")
-            st.write("Text extraction feature coming soon!")
+            with st.spinner("Extracting Content from the PDF"):
+                import pymupdf4llm
+                bytes = uploaded_file.read()
+                pypdf = pymupdf.open(stream=io.BytesIO(bytes))
+                doc = pymupdf4llm.to_markdown(pypdf)
+                st.text_area("Extracted PDF Text", doc, height=300)
+                st.markdown(doc)
+                st.success(f"Uploaded {uploaded_file.name}")
+                st.write("Text extraction feature coming soon!")
 
     with tab2:
         st.header("Extract Text")
@@ -291,42 +295,42 @@ def document_extraction_page():
 
             # Button to trigger processing
             if st.button("Convert to LaTeX"):
-                try:
-                    cuda_available = torch.cuda.is_available()
-                    cuda_device = torch.cuda.current_device() if cuda_available else None
-                    st.write(f"CUDA Available: {cuda_available}")
-                    if cuda_available:
-                        st.write(f"CUDA Device: {torch.cuda.get_device_name(cuda_device)}")
-                    # Nougat command
-                    command = ["nougat", input_path, "-o", output_path, "--no-skipping", "--recompute"]
-                    st.write("started")
-                    # Execute the command
-                    # result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                                               encoding='utf-8')
-                    st.write(process.stdout)
-                    process.wait()
-                    st.success("Conversion successful!")
+                with st.spinner("Transforming Scanned PDF into MarkDown"):
+                    try:
+                        cuda_available = torch.cuda.is_available()
+                        cuda_device = torch.cuda.current_device() if cuda_available else None
+                        st.write(f"CUDA Available: {cuda_available}")
+                        if cuda_available:
+                            st.write(f"CUDA Device: {torch.cuda.get_device_name(cuda_device)}")
+                        # Nougat command
+                        command = ["nougat", input_path, "-o", output_path, "--no-skipping", "--recompute"]
+                        st.write("started")
+                        # Execute the command
+                        # result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                                   encoding='utf-8')
+                        process.wait()
+                        st.success("Conversion successful!")
 
-                    # Display the output
-                    with open(output_path + '\\' + uploaded_file.name.split('.')[0] + '.mmd', "rb") as output_file:
-                        latex_content = output_file.read().decode('utf-8')
+                        # Display the output
+                        with open(output_path + '\\' + uploaded_file.name.split('.')[0] + '.mmd', "rb") as output_file:
+                            latex_content = output_file.read().decode('utf-8')
 
-                    st.markdown(latex_content)
+                        st.markdown(latex_content)
 
-                    # Allow the user to download the output file
-                    with open(output_path + '\\' + uploaded_file.name.split('.')[0] + '.mmd',
-                              "rb") as file_to_download:
-                        st.download_button(
-                            label="Download LaTeX file",
-                            data=file_to_download,
-                            file_name="output.tex",
-                            mime="text/plain",
-                        )
+                        # Allow the user to download the output file
+                        with open(output_path + '\\' + uploaded_file.name.split('.')[0] + '.mmd',
+                                  "rb") as file_to_download:
+                            st.download_button(
+                                label="Download LaTeX file",
+                                data=file_to_download,
+                                file_name="output.tex",
+                                mime="text/plain",
+                            )
 
-                except subprocess.CalledProcessError as e:
-                    st.error("An error occurred while converting the file.")
-                    st.error(e.stderr)
+                    except subprocess.CalledProcessError as e:
+                        st.error("An error occurred while converting the file.")
+                        st.error(e.stderr)
 
             st.write("Text extraction feature coming soon!")
 
