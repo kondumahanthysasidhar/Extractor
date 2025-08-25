@@ -252,7 +252,7 @@ def url_extraction_page():
 def document_extraction_page():
     st.title("Document Extraction")
 
-    tab1, tab2, tab3 = st.tabs(["Upload Document", "Extract Text", "Analyze Data"])
+    tab1, tab2, tab3 = st.tabs(["System Generated Pdfs", "Scanned Pdfs", "Data Processing"])
 
     with tab1:
         st.header("Upload Document")
@@ -367,7 +367,7 @@ def chunk_text(text, tokenizer, max_length=16384):
         yield tokenizer.decode(tokens[i:i+max_length])
 
 
-def summarize_large_text(text, model, tokenizer, max_length=16384, summary_max_length=256):
+def summarize_large_text(text, model, tokenizer, max_length=16384, summary_max_length=512):
     summaries = []
     for chunk in chunk_text(text, tokenizer, max_length):
         inputs = tokenizer(
@@ -379,7 +379,11 @@ def summarize_large_text(text, model, tokenizer, max_length=16384, summary_max_l
             min_length=50,
             length_penalty=2.0,
             num_beams=4,
-            early_stopping=True,
+            repetition_penalty=2.5,
+            no_repeat_ngram_size=3,
+            top_p=0.9,
+            top_k=50,
+        do_sample = True
         )
         summaries.append(tokenizer.decode(summary_ids[0], skip_special_tokens=True))
     return " ".join(summaries)
